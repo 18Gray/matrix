@@ -1,0 +1,24 @@
+PODS:
+  - matrix (0.1.0):
+    - matrix/matrixNonARC (= 0.1.0)
+  - matrix/matrixNonARC (0.1.0)
+
+DEPENDENCIES:
+  - matrix (from `https://github.com/chzhij5/matrix.git`, branch `feature/dev_ios`)
+
+EXTERNAL SOURCES:
+  matrix:
+    :branch: feature/dev_ios
+    :git: https://github.com/chzhij5/matrix.git
+
+CHECKOUT OPTIONS:
+  matrix:
+    :commit: eed4c8eb8709300ed244ecfb092d8aa1f76b1b19
+    :git: https://github.com/chzhij5/matrix.git
+
+SPEC CHECKSUMS:
+  matrix: 5b446a41a56dfc77d85a61b1583b6b17d435b6c3
+
+PODFILE CHECKSUM: 6d5cc21dcf7b203264a681764875f1dc08133e73
+
+COCOAPODS: 1.6.1

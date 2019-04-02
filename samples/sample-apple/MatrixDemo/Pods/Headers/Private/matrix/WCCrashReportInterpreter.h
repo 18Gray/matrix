@@ -1,0 +1,1 @@
+../../../matrix/matrix/matrix-apple/Matrix/WCCrashBlockMonitor/CrashBlockPlugin/Main/Utility/WCCrashReportInterpreter.h
