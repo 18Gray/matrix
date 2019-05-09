@@ -64,64 +64,46 @@ public class TestSQLiteLintActivity extends AppCompatActivity {
         IssueFilter.setCurrentFilter(IssueFilter.ISSUE_SQLITELINT);
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        IssueStorage.clearData();
-
-        SQLiteLintPlugin plugin = (SQLiteLintPlugin) Matrix.with().getPluginByClass(SQLiteLintPlugin.class);
-        if (plugin == null) {
-            return;
-        }
-
-        if (plugin.isPluginStarted()) {
-            plugin.stop();
-        }
-
-        stopTest();
-    }
-
-    private void insert() {
-        ContentValues contentValues = new ContentValues();
-        contentValues.put("Id", System.currentTimeMillis());
-        contentValues.put("name", TestSQLiteLintHelper.genRandomString(5));
-        contentValues.put("age", System.currentTimeMillis() % 90);
-        TestDBHelper.get().getWritableDatabase().insert(TestDBHelper.TABLE_NAME, null, contentValues);
-    }
-
-    //test PreparedStatementBetterChecker
-    private void batchInsert(final int repeatCnt) {
-        String sql;
-        for (int i = 0; i < repeatCnt; i++) {
-            sql = "insert into testTable(Id, name, age) values (" + System.currentTimeMillis() + i + ", '" + TestSQLiteLintHelper.genRandomString(5) + "'"
-                    + ", " + System.currentTimeMillis() % 90 + ")";
-            TestDBHelper.get().getWritableDatabase().execSQL(sql);
-        }
-
-    }
-
-    private void deleteAll() {
-        String sql = "delete from testTable";
-        TestDBHelper.get().getWritableDatabase().execSQL(sql);
+    public void toastStartTest(String val) {
+        Toast.makeText(this, "starting sqlite lint -> " + val + " test", Toast.LENGTH_SHORT).show();
     }
 
     public void onClick(View v) {
         if (v.getId() == R.id.create_db) {
-
             toastStartTest("create_db");
             startDBCreateTest();
         }
         if (v.getId() == R.id.start) {
-
             toastStartTest("start");
             startTest();
         }
     }
 
+    private void startDBCreateTest() {
+        only1 += 1;
+        if (only1 > 1) {
+            Toast.makeText(this, "install twice!! ignore.", Toast.LENGTH_LONG).show();
+        }
 
-    public void toastStartTest(String val) {
-        Toast.makeText(this, "starting sqlite lint -> " + val + " test", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "start create db, please wait", Toast.LENGTH_LONG).show();
+        SQLiteLintPlugin plugin = (SQLiteLintPlugin) Matrix.with().getPluginByClass(SQLiteLintPlugin.class);
+        if (plugin == null) {
+            return;
+        }
+
+        if (!plugin.isPluginStarted()) {
+            plugin.start();
+        }
+
+        /*SQLiteLint.Options.Builder builder = new SQLiteLint.Options.Builder();
+        builder.setAlertBehaviour(true).setReportBehaviour(true);
+        SQLiteLint.InstallEnv installEnv = new SQLiteLint.InstallEnv(TestDBHelper.get().getWritableDatabase().getPath(),
+                new SimpleSQLiteExecutionDelegate(TestDBHelper.get().getWritableDatabase()), SQLiteLint.SqlExecutionCallbackMode.CUSTOM_NOTIFY);*/
+        plugin.addConcernedDB(new SQLiteLintConfig.ConcernDb(TestDBHelper.get().getWritableDatabase())
+                //.setWhiteListXml(R.xml.sqlite_lint_whitelist)//disable white list by default
+                .enableAllCheckers());
     }
+
 
 
     private Map<String, SQLiteLintIssue> issueMap = new HashMap<>();
@@ -157,6 +139,14 @@ public class TestSQLiteLintActivity extends AppCompatActivity {
         }
     };
 
+    private void startTest() {
+        MatrixLog.d(TAG, "start test, please wait");
+        SQLiteLintAndroidCoreManager.INSTANCE.addBehavior(behaviour, TestDBHelper.get().getReadableDatabase().getPath());
+        TestSQLiteLintHelper.initIssueList(this, issueMap);
+        doTest();
+        testParser();
+    }
+
     private void doTest() {
         String[] list = TestSQLiteLintHelper.getTestSqlList();
 
@@ -170,18 +160,30 @@ public class TestSQLiteLintActivity extends AppCompatActivity {
         batchInsert(40);
     }
 
-    private void startTest() {
-
-        MatrixLog.d(TAG, "start test, please wait");
-        SQLiteLintAndroidCoreManager.INSTANCE.addBehavior(behaviour, TestDBHelper.get().getReadableDatabase().getPath());
-        TestSQLiteLintHelper.initIssueList(this, issueMap);
-        doTest();
-        testParser();
+    private void insert() {
+        ContentValues contentValues = new ContentValues();
+        contentValues.put("Id", System.currentTimeMillis());
+        contentValues.put("name", TestSQLiteLintHelper.genRandomString(5));
+        contentValues.put("age", System.currentTimeMillis() % 90);
+        TestDBHelper.get().getWritableDatabase().insert(TestDBHelper.TABLE_NAME, null, contentValues);
     }
 
-    private void stopTest() {
-        SQLiteLintAndroidCoreManager.INSTANCE.removeBehavior(behaviour, TestDBHelper.get().getReadableDatabase().getPath());
+    //test PreparedStatementBetterChecker
+    private void batchInsert(final int repeatCnt) {
+        String sql;
+        for (int i = 0; i < repeatCnt; i++) {
+            sql = "insert into testTable(Id, name, age) values (" + System.currentTimeMillis() + i + ", '" + TestSQLiteLintHelper.genRandomString(5) + "'"
+                    + ", " + System.currentTimeMillis() % 90 + ")";
+            TestDBHelper.get().getWritableDatabase().execSQL(sql);
+        }
+
     }
+
+    private void deleteAll() {
+        String sql = "delete from testTable";
+        TestDBHelper.get().getWritableDatabase().execSQL(sql);
+    }
+
 
     private void testParser() {
         SQLiteLintAndroidCoreManager.INSTANCE.removeBehavior(behaviour, TestDBHelper.get().getReadableDatabase().getPath());
@@ -192,28 +194,26 @@ public class TestSQLiteLintActivity extends AppCompatActivity {
         }
     }
 
-    private void startDBCreateTest() {
-        only1 += 1;
-        if (only1 > 1) {
-            Toast.makeText(this, "install twice!! ignore.", Toast.LENGTH_LONG).show();
-        }
 
-        Toast.makeText(this, "start create db, please wait", Toast.LENGTH_LONG).show();
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        IssueStorage.clearData();
+
         SQLiteLintPlugin plugin = (SQLiteLintPlugin) Matrix.with().getPluginByClass(SQLiteLintPlugin.class);
         if (plugin == null) {
             return;
         }
 
-        if (!plugin.isPluginStarted()) {
-            plugin.start();
+        if (plugin.isPluginStarted()) {
+            plugin.stop();
         }
 
-        /*SQLiteLint.Options.Builder builder = new SQLiteLint.Options.Builder();
-        builder.setAlertBehaviour(true).setReportBehaviour(true);
-        SQLiteLint.InstallEnv installEnv = new SQLiteLint.InstallEnv(TestDBHelper.get().getWritableDatabase().getPath(),
-                new SimpleSQLiteExecutionDelegate(TestDBHelper.get().getWritableDatabase()), SQLiteLint.SqlExecutionCallbackMode.CUSTOM_NOTIFY);*/
-        plugin.addConcernedDB(new SQLiteLintConfig.ConcernDb(TestDBHelper.get().getWritableDatabase())
-                //.setWhiteListXml(R.xml.sqlite_lint_whitelist)//disable white list by default
-                .enableAllCheckers());
+        stopTest();
     }
+
+    private void stopTest() {
+        SQLiteLintAndroidCoreManager.INSTANCE.removeBehavior(behaviour, TestDBHelper.get().getReadableDatabase().getPath());
+    }
+
 }
