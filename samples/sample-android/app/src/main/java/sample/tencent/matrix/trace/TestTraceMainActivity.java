@@ -18,9 +18,11 @@ package sample.tencent.matrix.trace;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Debug;
 import android.os.SystemClock;
+import android.provider.Settings;
 import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.View;
@@ -56,8 +58,23 @@ public class TestTraceMainActivity extends Activity {
             MatrixLog.i(TAG, "plugin-trace start");
             plugin.start();
         }
-        decorator = FrameDecorator.create(this);
-        decorator.show();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (Build.VERSION.SDK_INT >= 23) {
+            if (!Settings.canDrawOverlays(this)) {
+                Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivityForResult(intent, 1);
+            } else {
+                //TODO do something you need
+                decorator = FrameDecorator.create(this);
+                decorator.show();
+            }
+        }
     }
 
     @Override
